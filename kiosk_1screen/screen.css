@@ -1,0 +1,22 @@
+.app-shell.is-home { gap: clamp(32px, 5vh, 64px); }
+.home-content { width: min(100%, 1440px); gap: clamp(32px, 6vh, 64px); }
+.brand-logo { width: clamp(238px, 19vw, 360px); }
+.pathway-grid { min-height: clamp(240px, 31vh, 360px); }
+.pathway-choice__icon svg { width: clamp(100px, 10vw, 190px); height: clamp(100px, 10vw, 190px); }
+.pathway-choice__copy strong { font-size: clamp(24px, 2.2vw, 42px); }
+.pathway-choice { gap: 30px; }
+.film { position: fixed; inset: 0; background: #000; animation: film-enter 240ms ease-out both; }
+.film video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.film-back, .fullscreen { position: fixed; z-index: 2; top: 24px; min-height: 56px; padding: 12px 20px; border: 1px solid #ffffff70; border-radius: 10px; color: #fff; background: #101321df; font-size: 20px; font-weight: 650; cursor: pointer; touch-action: manipulation; }
+.film-back { left: 24px; }
+.fullscreen { right: 24px; }
+.film .play-overlay { max-width: calc(100% - 40px); }
+.home-content { animation: menu-enter 260ms ease-out both; }
+@keyframes film-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes menu-enter { from { opacity: .4; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 720px) {
+  .pathway-choice { gap: 16px; }
+  .pathway-choice__icon svg { width: 72px; height: 72px; }
+  .brand-logo { width: 238px; }
+  .app-shell.is-home { padding-top: 96px; }
+}
