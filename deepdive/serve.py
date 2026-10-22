@@ -150,7 +150,28 @@ class Handler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-cache")
+        origin = self.headers.get("Origin")
+        if self.path in ("/api/judge", "/api/health") and origin and self.allowed_origin(origin):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         super().end_headers()
+
+    def allowed_origin(self, origin):
+        return origin in {"https://ssolarii.github.io", f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}
+
+    def do_OPTIONS(self):
+        if self.path != "/api/judge":
+            self.send_json(404, {"error": "Unknown endpoint"})
+            return
+        if not self.allowed_origin(self.headers.get("Origin")):
+            self.send_json(403, {"error": "Origin not allowed"})
+            return
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def send_json(self, status, payload):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -179,8 +200,7 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(404, {"error": "Unknown endpoint"})
             return
         origin = self.headers.get("Origin")
-        allowed = {f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}
-        if origin and origin not in allowed:
+        if origin and not self.allowed_origin(origin):
             self.send_json(403, {"error": "Use the local game page"})
             return
         try:

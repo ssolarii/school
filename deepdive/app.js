@@ -1,9 +1,8 @@
 (() => {
   'use strict';
   const QUESTIONS = window.DEEP_DIVE_QUESTIONS;
-  const STORAGE = {seen:'deep-dive-seen-v1', additions:'deep-dive-additions-v1', judge:'deep-dive-judge-v1', sound:'deep-dive-sound-v1'};
+  const STORAGE = {seen:'deep-dive-seen-v1', additions:'deep-dive-additions-v1', sound:'deep-dive-sound-v1'};
   const BANDS = [100,300,600,1000];
-  const DEFAULT_JUDGE = /^https?:$/.test(location.protocol) ? '/api/judge' : '';
   const $ = (selector) => document.querySelector(selector);
   const screen = $('#screen');
   const guideDialog = $('#guide-dialog');
@@ -148,14 +147,11 @@
     $('#answer-button').disabled = true; $('#answer-button').setAttribute('aria-busy','true'); $('#answer-button .answer-label').textContent = 'Checking';
     const curated = findCurated(currentQuestion(),raw);
     if (curated) { award(raw,curated.depth,curated.explanation,true); return; }
-    const endpoint = loadJSON(STORAGE.judge,'') || DEFAULT_JUDGE;
-    if (endpoint) {
+    {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(),35000);
       try {
-        const response = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({questionId:currentQuestion().id,prompt:currentQuestion().prompt,answer:raw,allowedDepths:BANDS}),signal:controller.signal});
-        if (!response.ok) throw new Error('Judge unavailable');
-        const judgment = await response.json();
+        const judgment = await window.DeepDiveAI.review(currentQuestion(),raw,{signal:controller.signal});
         if (judgment.needsReview === true) { unknownAnswer(); return; }
         if (judgment.valid === true && BANDS.includes(Number(judgment.depth))) {
           award(raw,Number(judgment.depth),typeof judgment.explanation === 'string' && judgment.explanation.length < 180 ? judgment.explanation : currentQuestion().fact,true); return;
@@ -229,7 +225,6 @@
     const pending = state.phase === 'unknown' ? `<div class="guide-review"><div class="guide-subtitle">Review this answer</div><p><strong>${escapeHTML(state.pendingAnswer)}</strong><br>${escapeHTML(currentQuestion().prompt)}</p><div class="guide-band-buttons">${BANDS.map(depth => `<button type="button" data-depth="${depth}">${depth.toLocaleString()} m</button>`).join('')}</div><button type="button" class="secondary-button reject-button" id="guide-reject">Doesn’t fit</button></div>` : '<p class="guide-idle">No answer is waiting for review.</p>';
     guideContent.innerHTML = pending;
     guideDialog.showModal();
-    checkJudgeConnection();
     guideContent.querySelectorAll('[data-depth]').forEach(button => button.addEventListener('click',() => {
       const depth = Number(button.dataset.depth); const question = currentQuestion();
       additions[question.id] ||= [];
@@ -308,20 +303,6 @@
     if (state.phase === 'question' && !dialogOpen() && !interactiveTarget(event.target) && event.target !== $('#answer-input')) $('#answer-input').focus();
   });
   window.addEventListener('focus', () => { if (state.phase === 'question' && !dialogOpen()) $('#answer-input').focus(); });
-  $('#judge-url').value = loadJSON(STORAGE.judge,'');
-  async function checkJudgeConnection() {
-    const label=$('#judge-connection');
-    if (loadJSON(STORAGE.judge,'')) { label.textContent='Custom review endpoint configured.'; return; }
-    if (!DEFAULT_JUDGE) { label.textContent='Launch Start Deep Dive to enable local automatic review.'; return; }
-    label.textContent='Checking local connection…';
-    try {
-      const response=await fetch('/api/health',{signal:AbortSignal.timeout(4000)});
-      if (!response.ok) throw new Error('Unavailable');
-      const health=await response.json();
-      label.textContent=health.ready?'Local DeepSeek bridge is reachable.':'Start your DeepSeek bridge on port 8000 to enable automatic review.';
-    } catch { label.textContent='Launch Start Deep Dive to enable local automatic review.'; }
-  }
-  $('#save-judge').addEventListener('click',() => { const value=$('#judge-url').value.trim(); let allowed=!value || /^\/(?!\/)/.test(value); try { const url=new URL(value); allowed=allowed || url.protocol==='https:' || (url.protocol==='http:' && ['localhost','127.0.0.1','[::1]'].includes(url.hostname)); } catch {} if (!allowed) { $('#judge-url').setCustomValidity('Use a relative path, HTTPS URL, or local HTTP URL.'); $('#judge-url').reportValidity(); return; } $('#judge-url').setCustomValidity(''); saveJSON(STORAGE.judge,value); checkJudgeConnection(); $('#save-judge').textContent='Saved'; setTimeout(() => $('#save-judge').textContent='Save endpoint',1200); });
   $('#clear-chart').addEventListener('click',() => { if (confirm('Clear every guide-added answer on this laptop?')) { additions={}; saveJSON(STORAGE.additions,additions); $('#clear-chart').textContent='Guide answers cleared'; setTimeout(() => $('#clear-chart').textContent='Clear guide-added answers',1500); } });
   updateSoundButton(); intro();
 })();

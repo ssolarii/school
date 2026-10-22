@@ -1,0 +1,16 @@
+#table-settings-button{display:none;margin-right:auto}
+#app[data-phase="intro"] #table-settings-button{display:block}
+.table-settings-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100svh - 32px);overflow:auto;border:0;border-radius:8px;padding:28px;background:#f7f3ea;color:#243a3e;box-shadow:0 16px 56px rgba(0,15,23,.3);font-family:Atkinson,Arial,sans-serif}
+.table-settings-dialog::backdrop{background:rgba(3,20,30,.7)}
+.table-settings-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.table-settings-header h2{font:500 32px/1.15 Bitter,Georgia,serif;letter-spacing:-.03em;margin:0}
+.table-settings-dialog p{font-size:14px;line-height:1.5;color:#486168;margin:8px 0 20px}
+.table-settings-dialog label{display:block;font-size:15px;font-weight:600;margin:20px 0 8px}
+.table-settings-dialog input,.table-settings-dialog select{width:100%;min-height:48px;padding:10px 12px;font:400 16px/1.4 Atkinson,Arial,sans-serif;border:1px solid #859b99;border-radius:4px;background:#fffdf8;color:#182c33}
+.table-settings-dialog input:focus-visible,.table-settings-dialog select:focus-visible{outline:3px solid #a55121;outline-offset:3px}
+.table-settings-dialog .ai-help{margin:8px 0 16px}
+.ai-settings-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:24px 0 12px}
+.table-settings-dialog .secondary-button{color:#213a41;border-color:#839896}
+.table-settings-dialog .text-button{color:#486168;font-size:14px}
+#ai-settings-status{min-height:42px;margin:12px 0 0;overflow-wrap:anywhere}
+@media(max-width:540px){.table-settings-dialog{padding:22px}.ai-settings-actions{align-items:stretch}.ai-settings-actions .primary-button,.ai-settings-actions .secondary-button{flex:1;justify-content:center}}

@@ -98,6 +98,22 @@ class EndpointTests(unittest.TestCase):
             self.post({'questionId': 'language', 'answer': 'C'}, Origin='https://unrelated.example')
         self.assertEqual(caught.exception.code, 403)
 
+    def test_published_game_can_preflight_and_submit(self):
+        origin = 'https://ssolarii.github.io'
+        request = Request(self.url + '/api/judge', method='OPTIONS', headers={'Origin': origin, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type'})
+        with urlopen(request, timeout=3) as response:
+            self.assertEqual(response.status, 204)
+            self.assertEqual(response.headers['Access-Control-Allow-Origin'], origin)
+        with self.post({'questionId': 'language', 'answer': 'C'}, Origin=origin) as response:
+            self.assertEqual(response.headers['Access-Control-Allow-Origin'], origin)
+            self.assertEqual(json.load(response)['depth'], 100)
+
+    def test_unrelated_site_cannot_preflight(self):
+        request = Request(self.url + '/api/judge', method='OPTIONS', headers={'Origin': 'https://unrelated.example', 'Access-Control-Request-Method': 'POST'})
+        with self.assertRaises(HTTPError) as caught:
+            urlopen(request, timeout=3)
+        self.assertEqual(caught.exception.code, 403)
+
     def test_bridge_failure_keeps_manual_review(self):
         with patch.object(server.JUDGE, 'judge', side_effect=server.JudgeUnavailable('Unavailable')):
             with self.assertRaises(HTTPError) as caught:
