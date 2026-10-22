@@ -21,3 +21,11 @@ test('blocked storage uses working default settings', () => {
   assert.deepEqual(readSettings(), defaults);
   delete globalThis.localStorage;
 });
+
+test('autoplay intermission timing stays within usable limits', () => {
+  for (const [stored, expected] of [[0, 5], [120, 60], ['12', 12], [18, 18]]) {
+    globalThis.localStorage = { getItem: () => JSON.stringify({ autoplayInterludeSeconds: stored }) };
+    assert.equal(readSettings().autoplayInterludeSeconds, expected);
+  }
+  delete globalThis.localStorage;
+});

@@ -3,6 +3,7 @@ import { KioskBus } from './kiosk-bus.js';
 import { createKioskState, reduceKioskState } from './kiosk-core.js';
 import { preloadMedia } from './media.js';
 import { SETTINGS_KEY, readSettings, escapeText } from './settings-store.js';
+import { pathwayIcon } from './pathway-icon.js';
 
 let settings = readSettings();
 
@@ -15,6 +16,8 @@ let displayWindow = null;
 let displayConnected = false;
 let lastDisplaySeenAt = 0;
 let displayIssue = '';
+let autoplayActive = false;
+let autoplayPathwayId = KIOSK_CONFIG.pathways[0].id;
 let state = createKioskState({
   idleMs: KIOSK_CONFIG.idleSeconds * 1000,
   presentationMs: KIOSK_CONFIG.presentationSeconds * 1000,
@@ -33,10 +36,26 @@ const bus = new KioskBus(KIOSK_CONFIG.channelName, (message) => {
   }
   if (message.type === 'REQUEST_STATE') publishState();
   if (message.type === 'RETURN_HOME') transition({ type: 'RETURN_HOME' });
+  if (message.type === 'AUTOPLAY_START') setAutoplay(true);
+  if (message.type === 'AUTOPLAY_STOP') setAutoplay(false);
+  if (message.type === 'AUTOPLAY_STATUS' && autoplayActive) {
+    if (autoplayPathwayId !== message.payload.pathwayId) {
+      autoplayPathwayId = message.payload.pathwayId;
+      render();
+    }
+  }
 });
 
 function publishState() {
-  bus.send('STATE', { state, config: { presentationSeconds: KIOSK_CONFIG.presentationSeconds } });
+  bus.send('STATE', { state, autoplay: autoplayActive, config: { presentationSeconds: KIOSK_CONFIG.presentationSeconds } });
+}
+
+function setAutoplay(enabled) {
+  if (autoplayActive === enabled) return;
+  autoplayActive = enabled;
+  state = reduceKioskState(state, { type: 'RETURN_HOME' });
+  publishState();
+  render();
 }
 
 function transition(event, { broadcast = true } = {}) {
@@ -58,12 +77,13 @@ function openDisplay() {
     displayConnected = false;
     displayIssue = 'Allow popups for this page, then try again.';
     updateDisplayControls();
-    return;
+    return false;
   }
   displayWindow.focus();
   bus.peer = displayWindow;
   publishState();
   render();
+  return true;
 }
 
 function logo() {
@@ -75,13 +95,6 @@ function updateDisplayControls() {
   displayControls.innerHTML = displayConnected ? '' : `
     <button class="button button--quiet" data-action="open-display">Open window 2</button>
     ${displayIssue ? `<p class="window-control__message">${displayIssue}</p>` : ''}`;
-}
-
-function pathwayIcon(id) {
-  const common = 'viewBox="0 0 120 120" aria-hidden="true" focusable="false"';
-  if (id === 'science-tech') return `<svg ${common}><path d="M42 16h36M49 16v27L26 82a17 17 0 0 0 15 25h38a17 17 0 0 0 15-25L71 43V16M39 75h42"/></svg>`;
-  if (id === 'computer-science') return `<svg ${common}><rect x="21" y="23" width="78" height="57" rx="8"/><path d="M60 80v17M42 98h36"/></svg>`;
-  return `<svg ${common}><path d="m44 52-24 24a13 13 0 0 0 18 18l25-25M44 52l19 17M43 50V35L30 19h21l27 24v13l12 12-14 14-13-13M78 56l-15 13"/></svg>`;
 }
 
 function pathwayCard(pathway) {
@@ -106,7 +119,7 @@ function homeView() {
     <section class="pathway-grid" aria-label="Pathways">
       ${KIOSK_CONFIG.pathways.map(pathwayCard).join('')}
     </section>
-    </div>`;
+    </div><a class="autoplay-link" href="#autoplay" data-action="start-autoplay">autoplay</a>`;
 }
 
 function presentingView(pathway) {
@@ -123,8 +136,8 @@ function presentingView(pathway) {
 }
 
 function render() {
-  const pathway = paths.get(state.pathwayId);
-  const presenting = state.view === 'presenting' && pathway;
+  const pathway = paths.get(autoplayActive ? autoplayPathwayId : state.pathwayId);
+  const presenting = (autoplayActive || state.view === 'presenting') && pathway;
   const previousSelection = app.querySelector('.selected-pathway');
   const movingPathway = presenting ? pathway.id : previousSelection?.dataset.pathway;
   const sourceIcon = previousSelection?.querySelector('svg') ||
@@ -160,6 +173,11 @@ app.addEventListener('click', (event) => {
   if (card) selectPathway(card.dataset.pathway);
   const action = event.target.closest('[data-action]');
   if (!action) return;
+  if (action.dataset.action === 'start-autoplay') {
+    event.preventDefault();
+    if (!displayConnected && !openDisplay()) return;
+    setAutoplay(true);
+  }
   if (action.dataset.action === 'return-home') transition({ type: 'RETURN_HOME' });
   if (action.dataset.action === 'restart') selectPathway(action.dataset.pathway);
 });
@@ -168,9 +186,18 @@ displayControls.addEventListener('click', (event) => {
   if (event.target.closest('[data-action="open-display"]')) openDisplay();
 });
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && autoplayActive) { setAutoplay(false); return; }
   if (event.key === 'Escape') transition({ type: 'RETURN_HOME' });
   if (event.key.toLowerCase() === 'r' && state.view === 'presenting') selectPathway(state.pathwayId);
 });
+
+// Consume the exit tap so it cannot also select a pathway or reopen a popup.
+document.addEventListener('click', event => {
+  if (!autoplayActive) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  setAutoplay(false);
+}, true);
 
 ['pointerdown', 'keydown'].forEach((type) => window.addEventListener(type, () => transition({ type: 'MARK_ACTIVITY' }, { broadcast: false }), { passive: true }));
 window.setInterval(() => {

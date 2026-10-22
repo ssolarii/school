@@ -33,11 +33,20 @@ No Python server is needed for the hosted version. It needs internet access to l
 
 Tap the selected-pathway panel or press Escape to return early. Press R to restart. If window 2 closes, **Open window 2** returns; reopening it restores the active presentation. "Connected" refers to the paired browser window: move that window to the extended TV display manually.
 
+## Autoplay
+
+Tap the small **autoplay** link at the bottom of the main screen to start a repeating sequence: Health & Sustainable Technologies, Computer Science, then Engineering & Manufacturing. It opens window 2 if needed. Between films, a 12-second animated showcase introduces the next pathway using the school's logo, icon, and a real frame from its film. Videos keep their sound and have no added banners. The controller follows the current pathway.
+
+Tap anywhere on either screen to exit autoplay and return to the menu. The exit tap stops the film/audio immediately and does not also select a pathway. Escape also exits. If the browser requires **Tap to play with sound**, that playback button enables sound instead of exiting. Reloading the TV reconnects to the active mode; reloading the controller ends the mode.
+
+The single-screen demo has the same autoplay link and tap-to-exit behavior. Change the intermission duration (5–60 seconds) on the hidden settings page. Autoplay is started explicitly each session; its enabled state is not saved. An unavailable film offers retry, then advances after 8 seconds so a failed download cannot hold the whole loop.
+
 ## Hidden settings
 
 Open `/settings` on the same address and port as the kiosk, for example `http://127.0.0.1:8080/settings`. The static server redirects this to `/settings/`. No settings link is shown on the visitor screens. This is a hidden operator page, not a password-protected page.
 
 - TV idle screen: switch to an edge-to-edge muted looping video. Place a video in `media/` and enter `./media/filename.mp4`, or use a direct HTTPS MP4 URL. The default sample is already available. An unavailable video displays a recovery message.
+- Autoplay: set the animated intermission length between films (12 seconds by default).
 - Edit the TV idle heading/subtitle, touchscreen selection heading, selected-pathway instruction, and return hint.
 
 Save settings to update open windows immediately. Settings persist in this browser for this exact origin (host and port); a different browser, port, or device has its own settings. Restore defaults resets these customizations.

@@ -1,5 +1,6 @@
 export const SETTINGS_KEY = 'itzat-kiosk-settings-v1';
 export const defaults = {
+  autoplayInterludeSeconds: 12,
   idleVideoEnabled: false, idleVideo: './media/science-tech-sample.mp4',
   idleHeading: 'Choose a pathway on the touchscreen.',
   idleSubtitle: 'Discover what you can make, test, and build.',
@@ -12,6 +13,8 @@ export function readSettings() {
     for (const [key, fallback] of Object.entries(defaults)) {
       if (typeof stored?.[key] === typeof fallback) settings[key] = stored[key];
     }
+    settings.autoplayInterludeSeconds = Number.isFinite(settings.autoplayInterludeSeconds)
+      ? Math.min(60, Math.max(5, settings.autoplayInterludeSeconds)) : defaults.autoplayInterludeSeconds;
     return settings;
   }
   catch { return { ...defaults }; }

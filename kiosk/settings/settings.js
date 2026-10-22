@@ -19,7 +19,7 @@ form.addEventListener('submit', event => {
   const settings = {};
   for (const key of Object.keys(defaults)) {
     const field = form.elements.namedItem(key);
-    settings[key] = field.type === 'checkbox' ? field.checked : field.value.trim();
+    settings[key] = field.type === 'checkbox' ? field.checked : field.type === 'number' ? Number(field.value) : field.value.trim();
   }
   if (settings.idleVideoEnabled && (!settings.idleVideo || !mediaUrl(settings.idleVideo))) {
     status.textContent = 'Enter a relative video path or a direct HTTP/HTTPS video URL.';
