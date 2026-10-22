@@ -1,6 +1,15 @@
-# Sample footage
+# Pathway films
 
-Downloaded on October 20, 2026. These clips are illustrative stock footage, not footage of Itz'at STEAM Academy, its students, or its facilities. Playback is muted and repeats for the configured 90-second presentation.
+On October 21, 2026, the supplied `healthscience_final.mp4` and `engineering_final.mp4` replaced their corresponding stock samples. Both originals are included unchanged as H.264/AAC 1920×1080 MP4 files. They play once with sound; their JPEG posters are extracted frames. Computer Science continues to use its sample until the finished film is supplied.
+
+| Pathway | Active file | Duration |
+| --- | --- | --- |
+| Science + Tech | `media/healthscience_final.mp4` | 66.605 seconds |
+| Engineering & Manufacturing | `media/engineering_final.mp4` | 52.949 seconds |
+
+## Retained sample footage
+
+Downloaded on October 20, 2026. These clips are illustrative stock footage, not footage of Itz'at STEAM Academy, its students, or its facilities. Only the Computer Science sample is still selected for pathway playback. Sample playback is muted and repeats for the configured 90-second presentation.
 
 | Pathway | Included file | Source | Clip length |
 | --- | --- | --- | --- |

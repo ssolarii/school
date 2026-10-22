@@ -1,7 +1,6 @@
 /*
-  Replace the sample MP4s with school footage when the approved films are ready.
-  presentationSeconds is the total time a selection remains on the TV; a shorter
-  MP4 loops during that interval.
+  Finished films play once with sound. Sample footage loops muted until
+  presentationSeconds; this also acts as a maximum session length.
 */
 export const KIOSK_CONFIG = {
   channelName: 'itzat-steam-pathways-kiosk-v1',
@@ -15,11 +14,11 @@ export const KIOSK_CONFIG = {
     {
       id: 'science-tech',
       title: 'Science + Tech',
-      detail: 'Sample microscope footage.',
-      video: './media/science-tech-sample.mp4',
-      image: './media/science-tech-sample.jpg',
+      detail: 'Health science at Itz\'at STEAM Academy.',
+      video: './media/healthscience_final.mp4',
+      image: './media/healthscience_final.jpg',
       accent: 'violet',
-      sample: true,
+      sample: false,
     },
     {
       id: 'computer-science',
@@ -33,11 +32,11 @@ export const KIOSK_CONFIG = {
     {
       id: 'engineering-manufacturing',
       title: 'Engineering & Manufacturing',
-      detail: 'Sample manufacturing footage.',
-      video: './media/engineering-manufacturing-sample.mp4',
-      image: './media/engineering-manufacturing-sample.jpg',
+      detail: 'Engineering and manufacturing at Itz\'at STEAM Academy.',
+      video: './media/engineering_final.mp4',
+      image: './media/engineering_final.jpg',
       accent: 'mint',
-      sample: true,
+      sample: false,
     },
   ],
 };

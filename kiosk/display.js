@@ -6,7 +6,7 @@ import { SETTINGS_KEY, readSettings, escapeText, mediaUrl } from './settings-sto
 
 let settings = readSettings();
 
-preloadMedia(KIOSK_CONFIG.pathways);
+preloadMedia(KIOSK_CONFIG.pathways, { videos: true });
 
 const app = document.querySelector('#display-app');
 const paths = new Map(KIOSK_CONFIG.pathways.map((pathway) => [pathway.id, pathway]));
@@ -46,15 +46,15 @@ function showPlaybackControl(video, retry = false) {
   const button = document.createElement('button');
   button.className = 'play-overlay';
   button.dataset.action = retry ? 'retry-video' : 'play-video';
-  button.textContent = retry ? 'Video could not load. Tap to retry' : 'Tap to play video';
+  button.textContent = retry ? 'Video could not load. Tap to retry' : video.dataset.sound === 'true' ? 'Tap to play with sound' : 'Tap to play video';
   video.parentElement.append(button);
 }
 
 async function playVideo(video) {
   if (!video?.isConnected || playbackAttempts.has(video)) return;
   // Set properties explicitly before play(), including after browser interruptions.
-  video.muted = true;
-  video.defaultMuted = true;
+  video.muted = video.dataset.sound !== 'true';
+  video.defaultMuted = video.muted;
   video.playsInline = true;
   playbackAttempts.add(video);
   try {
@@ -83,20 +83,22 @@ function attractView(message = '') {
 
 function presentationView(pathway) {
   const media = pathway.video
-    ? `<video id="presentation-video" src="${pathway.video}" poster="${pathway.image}" preload="auto" autoplay muted loop playsinline aria-label="${pathway.title} presentation"></video>`
+    ? `<video id="presentation-video" src="${pathway.video}" poster="${pathway.image}" preload="auto" autoplay ${pathway.sample ? 'muted loop' : 'data-sound="true"'} playsinline aria-label="${pathway.title} presentation"></video>`
     : `<div class="no-video"><img src="${pathway.image}" alt=""><div><p>Presentation ready for</p><h1>${pathway.title}</h1><p>Add its approved video in config.js.</p></div></div>`;
   return `
     <section class="presentation-stage">
       ${media}
-      <div class="presentation-shade" ${settings.banners === 'none' ? 'hidden' : ''}></div>
-      ${['both', 'top'].includes(settings.banners) ? `<div class="presentation-top">${logo()}${settings.topText ? `<p class="banner-top-text">${escapeText(settings.topText.replaceAll('{pathway}', pathway.title))}</p>` : ''}</div>` : ''}
       <button class="display-button fullscreen-toggle" data-action="fullscreen">Fullscreen</button>
-      ${['both', 'bottom'].includes(settings.banners) ? `<div class="presentation-caption"><h1>${escapeText(settings.bottomTitle.replaceAll('{pathway}', pathway.title))}</h1><span>${escapeText(settings.bottomText.replaceAll('{pathway}', pathway.title))}</span></div>` : ''}
-      ${videoNeedsGesture ? '<button class="play-overlay" data-action="play-video">Tap to play video</button>' : ''}
     </section>`;
 }
 
 function render(message = '') {
+  const previousVideo = app.querySelector('video');
+  if (previousVideo) {
+    previousVideo.pause();
+    previousVideo.removeAttribute('src');
+    previousVideo.load();
+  }
   videoNeedsGesture = false;
   const pathway = paths.get(state.pathwayId);
   app.innerHTML = state.view === 'presenting' && pathway ? presentationView(pathway) : attractView(message);
@@ -104,6 +106,14 @@ function render(message = '') {
   const video = document.querySelector('#presentation-video');
   if (video) {
     video.addEventListener('error', () => showPlaybackControl(video, true));
+    if (state.view === 'presenting' && pathway && !pathway.sample) {
+      video.addEventListener('ended', () => {
+        if (!video.isConnected) return;
+        state = { ...state, view: 'home', pathwayId: null, presentationEndsAt: null };
+        render();
+        bus.send('RETURN_HOME');
+      }, { once: true });
+    }
     playVideo(video);
   }
 }

@@ -5,12 +5,6 @@
 <main class="settings-main">
 <header><a href="../">Back to kiosk</a><h1>Kiosk settings</h1><p>Changes apply to both open windows in this browser. This page is hidden from the visitor screens.</p></header>
 <form id="settings-form">
-<fieldset><legend>Video banners</legend>
-<label for="banners">Show banners</label><select id="banners" name="banners"><option value="both">Top and bottom</option><option value="top">Top only</option><option value="bottom">Bottom only</option><option value="none">Hide both</option></select>
-<label for="topText">Top banner text</label><input id="topText" name="topText" maxlength="180"><p class="help">Optional text beside the school logo.</p>
-<label for="bottomTitle">Bottom banner title</label><input id="bottomTitle" name="bottomTitle" maxlength="180"><p class="help">Use {pathway} to show the selected pathway name.</p>
-<label for="bottomText">Bottom banner subtitle</label><input id="bottomText" name="bottomText" maxlength="180">
-</fieldset>
 <fieldset><legend>TV idle screen</legend>
 <label class="check"><input type="checkbox" name="idleVideoEnabled">Replace the idle screen with fullscreen video</label>
 <label for="idleVideo">Idle video path or URL</label><input id="idleVideo" name="idleVideo" placeholder="./media/your-video.mp4"><p class="help">Put a video in the kiosk's media folder and enter its relative path, or use a direct HTTPS MP4 URL. The video loops muted without banners. Local files work offline.</p>

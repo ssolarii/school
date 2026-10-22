@@ -3,6 +3,14 @@ const assert = require('node:assert/strict');
 
 // Run against a local server or the published GitHub Pages URL.
 const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
+async function allowSoundIfNeeded(tv) {
+  await tv.waitForFunction(() => {
+    const video = document.querySelector('video');
+    return video && ((!video.paused && video.currentTime > .1) || document.querySelector('[data-action="play-video"]'));
+  }, null, { timeout: 30000 });
+  const play = tv.locator('[data-action="play-video"]');
+  if (await play.count()) await play.click();
+}
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true,
     args: ['--autoplay-policy=document-user-activation-required'] });
@@ -31,6 +39,7 @@ const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
       for (const id of ['science-tech', 'computer-science', 'engineering-manufacturing']) {
         await page.locator(`[data-pathway="${id}"]`).click();
         console.log(`${mode}: selected ${id}`);
+        await allowSoundIfNeeded(tv);
         await tv.waitForFunction(() => {
           const v = document.querySelector('video');
           return v && v.readyState >= 3 && !v.paused && v.currentTime > .5 && v.videoWidth > 0;
@@ -39,6 +48,11 @@ const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
         await tv.waitForTimeout(1200);
         const after = await tv.locator('video').evaluate(v => v.currentTime);
         assert.ok(after > before, `${mode}: video time must advance`);
+        const playback = await tv.locator('video').evaluate(v => ({ muted: v.muted, loop: v.loop, src: v.currentSrc, duration: v.duration }));
+        assert.equal(playback.muted, id === 'computer-science');
+        assert.equal(playback.loop, id === 'computer-science');
+        if (id !== 'computer-science') assert.ok(playback.duration > 50 && playback.src.includes('_final.mp4'));
+        assert.equal(await tv.locator('.presentation-top, .presentation-caption, .presentation-shade').count(), 0);
         if (process.env.KIOSK_TEST_PAUSE === '1') {
           await tv.locator('video').evaluate(v => v.pause());
           await tv.waitForFunction(() => !document.querySelector('video')?.paused, null, { timeout: 7000 });
@@ -46,8 +60,10 @@ const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
         assert.equal(await tv.getByRole('button', { name: /return to pathways/i }).count(), 0);
         assert.equal(await tv.getByRole('button', { name: 'Fullscreen', exact: true }).isVisible(), false);
         assert.ok(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight));
+        await tv.evaluate(() => { window.departingVideo = document.querySelector('video'); });
         await page.getByRole('button', { name: 'Back to pathways', exact: true }).click();
         await tv.waitForFunction(() => !document.querySelector('video'));
+        assert.ok(await tv.evaluate(() => window.departingVideo.paused));
       }
       await page.locator('[data-pathway="computer-science"]').click();
       await tv.reload();
@@ -65,11 +81,13 @@ const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
           };
         });
         await page.locator('[data-pathway="science-tech"]').click();
-        await tv.getByRole('button', { name: 'Tap to play video', exact: true }).waitFor();
+        await tv.getByRole('button', { name: 'Tap to play with sound', exact: true }).waitFor();
         await tv.evaluate(() => { HTMLMediaElement.prototype.play = window.originalPlay; });
-        await tv.getByRole('button', { name: 'Tap to play video', exact: true }).click();
+        await tv.getByRole('button', { name: 'Tap to play with sound', exact: true }).click();
         await tv.waitForFunction(() => document.querySelector('video')?.currentTime > .5);
-        await page.getByRole('button', { name: 'Back to pathways', exact: true }).click();
+        // Speed through the real ending; this also works on local servers without Range requests.
+        await tv.locator('video').evaluate(v => { v.playbackRate = 16; });
+        await page.locator('.pathway-grid').waitFor({ timeout: 20000 });
         await tv.waitForFunction(() => !document.querySelector('video'));
         // A failed file load is not an autoplay error; retry must fetch the file again.
         await tv.route('**/computer-science-sample.mp4', route => route.abort());
@@ -91,12 +109,15 @@ const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
           await page.screenshot({ path: `${process.env.KIOSK_SCREENSHOT_DIR}/kiosk-selected.png` });
           await tv.screenshot({ path: `${process.env.KIOSK_SCREENSHOT_DIR}/tv-playing.png` });
         }
-        // Live settings update both windows, including banner hiding and idle video.
+        // Old saved banner preferences must never overlay the finished films.
+        await page.evaluate(() => localStorage.setItem('itzat-kiosk-settings-v1', JSON.stringify({ banners: 'both', bottomText: 'Old banner' })));
+        assert.equal(await tv.locator('.presentation-top, .presentation-caption, .presentation-shade').count(), 0);
+        // Live settings still update the idle video and touchscreen text.
         const settingsPage = await context.newPage();
         await settingsPage.goto(new URL('settings/', base).href);
-        await settingsPage.locator('[name="banners"]').selectOption('none');
+        await settingsPage.locator('[name="kioskHeading"]').fill('Choose your next pathway');
         await settingsPage.locator('form').evaluate(form => form.requestSubmit());
-        await tv.waitForFunction(() => !document.querySelector('.presentation-top') && !document.querySelector('.presentation-caption'));
+        await settingsPage.waitForFunction(() => document.querySelector('#save-status').textContent.startsWith('Saved.'));
         await settingsPage.locator('[name="idleVideoEnabled"]').check();
         await settingsPage.locator('form').evaluate(form => form.requestSubmit());
         await page.getByRole('button', { name: 'Back to pathways', exact: true }).click();
@@ -111,7 +132,7 @@ const base = process.env.KIOSK_URL || 'http://127.0.0.1:8098/';
         await page.clock.fastForward(91000);
         await tv.waitForFunction(() => !document.querySelector('video'));
         await page.clock.resume();
-        console.log('PASS autoplay recovery, failed-file retry, fullscreen denial, live settings, idle film, timed return');
+        console.log('PASS sound permission, completed-film return, failed-file retry, fullscreen denial, legacy banner removal, live settings, idle film, timed return');
       }
       await tv.close();
       await page.waitForFunction(() => !document.querySelector('#display-controls').hidden, null, { timeout: 15000 });

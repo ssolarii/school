@@ -111,7 +111,7 @@ function homeView() {
 
 function presentingView(pathway) {
   return `
-    <section class="selected-pathway" aria-labelledby="presenting-heading">
+    <section class="selected-pathway" data-pathway="${pathway.id}" aria-labelledby="presenting-heading">
       <span class="selected-pathway__icon">${pathwayIcon(pathway.id)}</span>
       <div class="selected-pathway__copy">
         <h1 id="presenting-heading">${pathway.title}</h1>
@@ -125,11 +125,34 @@ function presentingView(pathway) {
 function render() {
   const pathway = paths.get(state.pathwayId);
   const presenting = state.view === 'presenting' && pathway;
+  const previousSelection = app.querySelector('.selected-pathway');
+  const movingPathway = presenting ? pathway.id : previousSelection?.dataset.pathway;
+  const sourceIcon = previousSelection?.querySelector('svg') ||
+    app.querySelector(`[data-pathway="${movingPathway}"] .pathway-choice__icon svg`);
+  const origin = sourceIcon?.getBoundingClientRect();
+  const originColor = sourceIcon ? getComputedStyle(sourceIcon).color : '';
+  const changedView = Boolean(previousSelection) !== Boolean(presenting);
   app.classList.toggle('is-home', !presenting);
   app.classList.toggle('is-presenting', Boolean(presenting));
   document.body.classList.toggle('is-presenting', Boolean(presenting));
+  if (presenting) document.body.dataset.pathway = pathway.id;
   app.innerHTML = presenting ? presentingView(pathway) : homeView();
   updateDisplayControls();
+  if (changedView && origin && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const targetIcon = presenting ? app.querySelector('.selected-pathway__icon svg') :
+      app.querySelector(`[data-pathway="${movingPathway}"] .pathway-choice__icon svg`);
+    if (!targetIcon?.animate) return;
+    const destination = targetIcon.getBoundingClientRect();
+    // Carry the chosen icon between the two layouts; the rest of the UI stays usable.
+    targetIcon.animate([
+      { transform: `translate(${origin.x - destination.x}px, ${origin.y - destination.y}px) scale(${origin.width / destination.width})`, color: originColor },
+      { transform: 'none', color: getComputedStyle(targetIcon).color },
+    ], { duration: presenting ? 460 : 300, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+    if (presenting) app.querySelector('.selected-pathway__copy').animate([
+      { opacity: .2, clipPath: 'inset(0 0 100% 0)' },
+      { opacity: 1, clipPath: 'inset(0 0 0 0)' },
+    ], { duration: 340, delay: 70, fill: 'backwards', easing: 'cubic-bezier(.16, 1, .3, 1)' });
+  }
 }
 
 app.addEventListener('click', (event) => {
