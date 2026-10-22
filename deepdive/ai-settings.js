@@ -40,7 +40,7 @@
       const result=await ai.review(question,'Python',{settings:draft(),signal:controller.signal});
       if(pending===controller)status.textContent=result.valid?'Connection works. The endpoint returned a valid answer review.':'The endpoint responded but could not confirm the test answer. Check its format and model.';
     }catch(error){
-      if(pending===controller)status.textContent=error.name==='AbortError'?'Connection timed out. Check the address and start your AI server.':`Could not connect: ${error.message} For localhost, allow local-network access if your browser asks.`;
+      if(pending===controller)status.textContent=error.name==='AbortError'?'Connection timed out. Start the AI server, check the URL, and allow local-network access if your browser asks.':`Could not connect: ${error.message} For localhost, allow local-network access if your browser asks.`;
     }finally{clearTimeout(timeout);if(pending===controller)cancelTest();}
   });
 })();
