@@ -85,9 +85,21 @@ async function allowSoundIfNeeded(tv) {
         await tv.evaluate(() => { HTMLMediaElement.prototype.play = window.originalPlay; });
         await tv.getByRole('button', { name: 'Tap to play with sound', exact: true }).click();
         await tv.waitForFunction(() => document.querySelector('video')?.currentTime > .5);
-        // Speed through the real ending; this also works on local servers without Range requests.
-        await tv.locator('video').evaluate(v => { v.playbackRate = 16; });
-        await page.locator('.pathway-grid').waitFor({ timeout: 20000 });
+        // Observe the real ended event; allow network buffering of the original 1080p film.
+        await tv.locator('video').evaluate(v => {
+          window.filmEnded = false;
+          v.addEventListener('ended', () => { window.filmEnded = true; }, { once: true });
+          v.playbackRate = 4;
+        });
+        try { await tv.waitForFunction(() => window.filmEnded, null, { timeout: 70000 }); }
+        catch (error) {
+          console.error('Film end diagnostic:', await tv.evaluate(() => {
+            const v = document.querySelector('video');
+            return v ? { time: v.currentTime, duration: v.duration, paused: v.paused, ended: v.ended, readyState: v.readyState, buffered: v.buffered.length ? v.buffered.end(v.buffered.length - 1) : 0 } : { videoRemoved: true, filmEnded: window.filmEnded };
+          }));
+          throw error;
+        }
+        await page.locator('.pathway-grid').waitFor();
         await tv.waitForFunction(() => !document.querySelector('video'));
         // A failed file load is not an autoplay error; retry must fetch the file again.
         await tv.route('**/computer-science-sample.mp4', route => route.abort());
