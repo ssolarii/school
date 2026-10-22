@@ -13,7 +13,7 @@ export const KIOSK_CONFIG = {
   pathways: [
     {
       id: 'science-tech',
-      title: 'Science + Tech',
+      title: 'Health & Sustainable Technologies',
       detail: 'Health science at Itz\'at STEAM Academy.',
       video: './media/healthscience_final.mp4',
       image: './media/healthscience_final.jpg',

@@ -4,7 +4,7 @@ A browser-only, two-screen kiosk. The touchscreen uses `index.html`; the TV uses
 
 ## First-run checklist
 
-1. The pathways are **Science + Tech**, **Computer Science**, and **Engineering & Manufacturing**. All three play their finished school films. The files are connected in [`config.js`](./config.js).
+1. The pathways are **Health & Sustainable Technologies**, **Computer Science**, and **Engineering & Manufacturing**. All three play their finished school films. The files are connected in [`config.js`](./config.js).
 2. When school videos are ready, add them in `media/`, update the relative `video` and poster `image` paths, and set that pathway's `sample` to `false`. [Media credits and sources](./MEDIA-CREDITS.md) document the current samples.
 3. Finished films (`sample: false`) play once with sound and return both screens home when they end. Samples loop muted for `presentationSeconds` (90 seconds). This setting is also the maximum session length; increase it if a future finished film is longer.
 4. Serve this folder over a local or HTTPS static web server. Do not rely on double-clicking the HTML files: browsers can restrict JavaScript module loading from `file:` URLs.

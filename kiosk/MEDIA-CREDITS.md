@@ -4,7 +4,7 @@ The supplied `healthscience_final.mp4`, `engineering_final.mp4`, and `cs_final.m
 
 | Pathway | Active file | Duration |
 | --- | --- | --- |
-| Science + Tech | `media/healthscience_final.mp4` | 66.605 seconds |
+| Health & Sustainable Technologies | `media/healthscience_final.mp4` | 66.605 seconds |
 | Engineering & Manufacturing | `media/engineering_final.mp4` | 52.949 seconds |
 | Computer Science | `media/cs_final.mp4` | 75.344 seconds |
 
@@ -14,7 +14,7 @@ Downloaded on October 20, 2026. These clips are illustrative stock footage, not 
 
 | Pathway | Included file | Source | Clip length |
 | --- | --- | --- | --- |
-| Science + Tech | `media/science-tech-sample.mp4` | [Scientist observing through a microscope](https://mixkit.co/free-stock-video/scientist-observing-through-a-microscope-4733/) | 20.52 seconds |
+| Health & Sustainable Technologies | `media/science-tech-sample.mp4` | [Scientist observing through a microscope](https://mixkit.co/free-stock-video/scientist-observing-through-a-microscope-4733/) | 20.52 seconds |
 | Computer Science | `media/computer-science-sample.mp4` | [Programming codes close up on a screen](https://mixkit.co/free-stock-video/programming-codes-close-up-on-a-screen-41648/) | 9.05 seconds |
 | Engineering & Manufacturing | `media/engineering-manufacturing-sample.mp4` | [Industrial machine working](https://mixkit.co/free-stock-video/industrial-machine-working-2230/) | 22.06 seconds |
 

@@ -20,7 +20,7 @@ def main():
         expect(display.get_by_role("heading", name="Choose a pathway on the touchscreen.")).to_be_visible()
         expect(page.get_by_role("button", name="Open window 2", exact=True)).to_have_count(0)
 
-        for title in ["Science + Tech", "Computer Science", "Engineering & Manufacturing"]:
+        for title in ["Health & Sustainable Technologies", "Computer Science", "Engineering & Manufacturing"]:
             page.get_by_role("button", name=title, exact=True).click()
             expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
             expect(page.locator("video")).to_have_count(0)
