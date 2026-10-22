@@ -1,0 +1,89 @@
+/* Quiet, product-specific finish for the paper chart and descending sea. */
+#app {
+  --dive-progress: 0;
+  --paper: #f4f0e7;
+  --ink: #182c33;
+  background: var(--paper);
+  transition: background-color 700ms ease, color 700ms ease;
+}
+#app[data-depth-stage="reef"] { --paper: #eeeae2; --ink: #172b34; }
+#app[data-depth-stage="twilight"] { --paper: #e9e9e2; --ink: #152a35; }
+#app[data-depth-stage="abyss"] { --paper: #e3e7e2; --ink: #132833; }
+#app[data-depth-stage="reef"] .paper-side,
+#app[data-depth-stage="twilight"] .paper-side,
+#app[data-depth-stage="abyss"] .paper-side { background: var(--paper); transition: background-color 700ms ease; }
+#app[data-depth-stage="reef"] .ocean-side { filter: brightness(.94) saturate(.92); }
+#app[data-depth-stage="twilight"] .ocean-side { filter: brightness(.86) saturate(.84); }
+#app[data-depth-stage="abyss"] .ocean-side { filter: brightness(.76) saturate(.78); }
+.ocean-side { transition: filter 900ms ease; }
+
+.topbar-right { gap: 10px; }
+.fullscreen-button { width: 44px; height: 44px; }
+.fullscreen-exit {
+  display: none;
+  position: fixed;
+  z-index: 20;
+  top: 18px;
+  right: 20px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 1px solid rgba(218, 233, 231, .56);
+  border-radius: 4px;
+  background: rgba(6, 35, 48, .9);
+  color: #f4f0e7;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#app:fullscreen { width: 100%; height: 100%; background: var(--paper); }
+#app:fullscreen .topbar { display: none; }
+#app:fullscreen .game-layout { height: 100%; }
+#app:fullscreen .fullscreen-exit:not([hidden]) { display: block; }
+body.theatre-active { overflow: hidden; }
+#app.theatre-mode {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+#app.theatre-mode .topbar { display: none; }
+#app.theatre-mode .game-layout { height: 100%; min-height: 0; }
+#app.theatre-mode .paper-side { min-height: 0; }
+#app.theatre-mode .fullscreen-exit:not([hidden]) { display: block; }
+
+.dive-enter .paper-side { animation: paper-arrive 600ms cubic-bezier(.2,.75,.25,1) both; }
+.dive-enter .ocean-side { animation: sea-arrive 700ms cubic-bezier(.2,.75,.25,1) both; }
+.award-line { animation: award-arrive 480ms cubic-bezier(.2,.75,.25,1) both; }
+.exceptional .award-line { animation-duration: 650ms; }
+@keyframes paper-arrive { from { opacity: .75; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sea-arrive { from { filter: brightness(1.15); } to { filter: brightness(1); } }
+@keyframes award-arrive { from { opacity: .72; transform: translateY(9px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Keep labels, helper copy, and secondary controls comfortable to read. */
+.brand-school, .text-button, .danger-link, .untimed-choice, .intro-bottom,
+.progress-wrap, .timer span:last-child, .untimed-label, .answer-hint,
+.inline-error, .inline-guide-button, .feedback-note, .result-total small,
+.result-num, .result-list strong, .result-actions > span, .ocean-head,
+.depth-label, .tick span, .ocean-bottom, .guide-settings label,
+.guide-settings p, .guide-settings code { font-size: 14px; }
+.brand-school { font-size: 14px; }
+.timer span:last-child, .depth-label, .result-num { font-size: 14px; }
+.ocean-bottom { line-height: 1.5; }
+
+@media (max-width: 700px) {
+  #app:fullscreen .game-layout { min-height: 100%; }
+  #app:fullscreen .paper-side { min-height: 0; }
+  #app.theatre-mode .game-layout { min-height: 100%; }
+  .fullscreen-exit { top: 10px; right: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app, .ocean-side, #app[data-depth-stage] .paper-side,
+  .dive-enter .paper-side, .dive-enter .ocean-side, .award-line {
+    transition: none !important;
+    animation: none !important;
+  }
+}

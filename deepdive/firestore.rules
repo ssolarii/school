@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /deepDiveScores/{scoreId} {
+      // Scores and aliases are intentionally public to anyone viewing the board.
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll([
+          'playerId', 'alias', 'depth', 'sessionId', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'playerId', 'alias', 'depth', 'sessionId', 'createdAt'
+        ])
+        && request.resource.data.playerId is string
+        && request.resource.data.playerId == request.auth.uid
+        && request.resource.data.alias is string
+        && request.resource.data.alias.matches('^[A-Za-z0-9 ._-]{1,20}$')
+        && request.resource.data.depth is int
+        && request.resource.data.depth >= 0
+        && request.resource.data.depth <= 6000
+        && request.resource.data.sessionId is string
+        && request.resource.data.sessionId.matches('^[A-Za-z0-9_-]{20,64}$')
+        && request.resource.data.createdAt == request.time;
+
+      // A submitted score cannot be edited or removed by a client.
+      allow update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

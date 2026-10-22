@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#092a38">
+  <meta name="description" content="Deep Dive — a quick answer game by Itz’at STEAM Academy.">
+  <title>Deep Dive · Itz’at STEAM Academy</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="concept.css">
+  <link rel="stylesheet" href="polish.css">
+  <link rel="stylesheet" href="world.css">
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <header class="topbar">
+      <div class="brand" aria-label="Deep Dive by Itz’at STEAM Academy">
+        <svg class="brand-mark" viewBox="0 0 32 28" aria-hidden="true"><path d="M2 8c5 4 9-4 14 0s9-4 14 0M2 14c5 4 9-4 14 0s9-4 14 0M2 20c5 4 9-4 14 0s9-4 14 0"/></svg>
+        <span class="brand-name">Deep Dive</span>
+        <span class="brand-school">Itz’at <span>STEAM Academy</span></span>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-button fullscreen-button" id="fullscreen-button" type="button" aria-label="Enter full screen" title="Enter full screen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4"/></svg>
+        </button>
+        <button class="icon-button" id="sound-button" type="button" aria-label="Mute sound" title="Mute sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path class="sound-wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="paper-side" aria-label="Game">
+        <div class="paper-content" id="screen"></div>
+        <div class="visually-hidden" id="game-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+        <footer class="paper-footer">
+          <button id="guide-button" class="text-button" type="button" title="Guide tools">Guide tools</button>
+        </footer>
+      </section>
+
+      <aside class="ocean-side" aria-label="Dive progress">
+        <div class="ocean-head"><span>Descent log</span><span id="status-text">At the surface</span></div>
+        <div class="depth-readout"><span id="depth-value">0</span><small>m</small></div>
+        <div class="depth-label">Current depth</div>
+        <div class="depth-track" aria-hidden="true">
+          <div class="track-line"></div>
+          <div class="tick tick-0"><span>0</span></div>
+          <div class="tick tick-1"><span>1,500</span></div>
+          <div class="tick tick-2"><span>3,000</span></div>
+          <div class="tick tick-3"><span>4,500</span></div>
+          <div class="tick tick-4"><span>6,000 m</span></div>
+          <div class="sub-position" id="sub-position"><div class="submersible" id="submersible"><span class="sonar-ring"></span><svg viewBox="0 0 96 56" aria-hidden="true"><defs><linearGradient id="hull-metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0b1"/><stop offset=".28" stop-color="#d99b2a"/><stop offset=".55" stop-color="#d8a335"/><stop offset="1" stop-color="#684316"/></linearGradient><radialGradient id="port-glass" cx=".35" cy=".25" r=".8"><stop stop-color="#b8d8dd"/><stop offset=".3" stop-color="#36788c"/><stop offset="1" stop-color="#0a2939"/></radialGradient></defs><path class="sub-body" d="M23 22h43c12 0 22 7 22 16S78 53 66 53H23c-7 0-12-7-12-15s5-16 12-16Z"/><path class="sub-top" d="M38 22V12h18v10M47 12V4h8"/><circle class="sub-window" cx="42" cy="37" r="7"/><circle class="sub-window" cx="64" cy="37" r="7"/><path class="sub-tail" d="M12 32H5v13h7M4 27v23"/></svg><span class="sub-light"></span><span class="depth-datum"></span></div></div>
+        </div>
+        <div class="ocean-bottom"><span>Rarer answers take you further.</span></div>
+      </aside>
+    </main>
+  </div>
+  <div class="reward-vignette" id="reward-vignette" aria-hidden="true"></div>
+  <dialog id="guide-dialog" class="guide-dialog" aria-labelledby="guide-title">
+    <form method="dialog" class="guide-header"><h2 id="guide-title">Guide tools</h2><button class="icon-button close-button" aria-label="Close guide tools"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></form>
+    <p>Use these only when an answer is not in the starter chart. Guide decisions are saved on this laptop for later rounds.</p>
+    <div id="guide-content"></div>
+    <details class="guide-settings"><summary>Automatic answer review</summary><p id="judge-connection">Local DeepSeek connection</p><label for="judge-url">Review endpoint override</label><input id="judge-url" type="text" inputmode="url" placeholder="Automatic: /api/judge"><p>Leave blank to use the local DeepSeek connection. Unfamiliar answers are checked automatically; uncertain answers go to a guide. Keep API keys on the server.</p><button type="button" id="save-judge" class="small-button">Save endpoint</button></details>
+    <button class="danger-link" id="clear-chart" type="button">Clear guide-added answers</button>
+  </dialog>
+  <script src="questions.js"></script>
+  <script src="leaderboard-config.js"></script>
+  <script src="leaderboard.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

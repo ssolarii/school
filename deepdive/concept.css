@@ -1,0 +1,93 @@
+/* Reference-image skin. The base stylesheet owns controls, states and layout;
+   this layer supplies the approved chart-paper / photographic ocean treatment. */
+.game-layout{grid-template-columns:minmax(0,68%) minmax(0,32%)}
+.paper-side{background:var(--paper)}
+.paper-side::before{content:none}
+.paper-content{padding:28px clamp(40px,4.3vw,72px) 8px clamp(80px,11.7vw,180px)}
+.paper-footer{min-height:44px;padding:0 clamp(40px,4.3vw,72px);background:transparent}
+.intro-bottom{color:#465a60;border-color:#a6b1a9;background:transparent}
+.question-meta{min-height:104px}
+.progress-wrap{color:#4a4b50}
+.progress-dot{width:13px;height:13px;border-color:#77767c}
+.progress-dot.complete{background:var(--purple);border-color:var(--purple)}
+.question-main{max-width:900px;padding:20px 0 32px}
+.question-main h1{font-size:clamp(44px,4.9vw,82px);max-width:none;line-height:1.08;color:#101525}
+.long-question h1{font-size:clamp(40px,4.1vw,66px)}
+.question-main form{margin-top:46px}
+.answer-row{min-height:72px;border:1.5px solid #7a7b76;border-radius:10px;background:rgba(250,247,240,.88)}
+.answer-row input{font-size:22px;color:#101525;border-radius:9px 0 0 9px}
+.answer-button{min-width:126px;min-height:70px;border-radius:0 8px 8px 0;background:#b45b21}
+.answer-button:hover{background:#98481b}
+.timer{position:relative;width:104px;height:104px;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#151624}
+.timer #timer-number{font:500 44px/1 'Fraunces',Georgia,serif;color:#151624}
+.timer span:last-child{font-size:11px;letter-spacing:.05em}
+.untimed-label{width:auto;height:auto;font-size:13px}
+.timer svg{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke-width:5}
+.clock-track{stroke:rgba(54,51,51,.15)}
+.clock-progress{stroke:#b45b21;stroke-dasharray:276.46;stroke-dashoffset:calc(276.46 * (1 - var(--remaining)));transform:rotate(-90deg);transform-origin:50px 50px}
+.ocean-side{background:#072c3c url('assets/reef-photo.jpg') 53% center/auto 100% no-repeat}
+.ocean-side::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(0,20,35,.48),transparent 30%,rgba(0,10,23,.15))}
+.ocean-head{top:30px;left:clamp(24px,2.5vw,44px);right:clamp(24px,2.5vw,44px);font-size:12px;color:#fffdf6;text-shadow:0 2px 5px rgba(0,0,0,.75)}
+.depth-readout{top:75px;left:clamp(24px,2.5vw,44px);font:500 clamp(38px,3.7vw,60px)/1 'Fraunces',Georgia,serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;text-shadow:0 2px 5px rgba(0,0,0,.75)}
+.depth-label{top:calc(85px + clamp(38px,3.7vw,60px));left:clamp(24px,2.5vw,44px);color:#f4f5ef;text-shadow:0 2px 5px rgba(0,0,0,.75)}
+.depth-track{top:30%;bottom:12%;left:8%;right:11%}
+.track-line{left:77%;background:#c4d8da}
+.tick{left:77%;right:auto;width:14px;border-color:#c4d8da}
+.tick::before{left:0;width:14px;border-color:#d8e6e5}
+.tick span{left:26px;right:auto;top:-9px;color:#f5f6ed;font:400 14px/1 Georgia,serif;font-variant-numeric:tabular-nums;text-align:left;text-shadow:0 2px 5px rgba(0,0,0,.75)}
+.sub-position{left:calc(77% - 112px);width:112px;transition-duration:1000ms}
+.submersible{width:112px;height:56px}
+.submersible svg{width:66px;height:52px;stroke:#102a34;stroke-width:1.5;filter:drop-shadow(0 3px 5px rgba(0,0,0,.65))}
+.sub-body{fill:url(#hull-metal)}
+.sub-window{fill:url(#port-glass);stroke:#263c43;stroke-width:2.5}
+.sub-light{left:58px;top:17px;width:54px;height:24px;background:linear-gradient(90deg,rgba(221,244,237,.5),rgba(221,244,237,0));clip-path:polygon(0 43%,100% 0,100% 100%,0 57%);opacity:.55;border:0}
+.depth-datum{right:-2px;top:26px;width:4px;height:4px;background:#d2e7e7}
+.sonar-ring{left:8px;top:5px}
+.ocean-bottom{bottom:24px;left:clamp(24px,2.5vw,44px);right:clamp(24px,2.5vw,44px);color:#f1f6ee;text-shadow:0 2px 5px rgba(0,0,0,.75)}
+.reward-vignette{position:fixed;inset:0;z-index:20;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 38%,rgba(7,24,39,.78) 100%);box-shadow:inset 0 0 80px 10px rgba(223,172,74,.16)}
+.great-reward{animation:great-vignette 900ms ease-out both}
+.exceptional-reward{animation:exceptional-vignette 1500ms ease-out both}
+@keyframes great-vignette{0%,100%{opacity:0}24%{opacity:.5}}
+@keyframes exceptional-vignette{0%,100%{opacity:0}18%{opacity:.95}52%{opacity:.65}}
+@media(max-width:1000px){
+  .paper-content{padding:24px 34px 8px 76px}
+  .question-main h1{font-size:clamp(38px,4.9vw,56px)}
+  .long-question h1{font-size:clamp(34px,4.1vw,46px)}
+  .depth-track{top:35%}
+  .ocean-head{display:block}
+}
+@media(max-width:700px){
+  .paper-side{background-size:210% 100%;background-position:23% top}
+  .paper-content{padding:24px 26px 8px}
+  .paper-footer{padding:0 26px}
+  .question-meta{min-height:72px}
+  .timer{width:72px;height:72px}
+  .timer #timer-number{font-size:28px}
+  .timer span:last-child{font-size:10px}
+  .untimed-label{width:auto;height:auto}
+  .question-main{padding:24px 0}
+  .question-main h1{font-size:clamp(34px,6vw,44px);max-width:22ch}
+  .long-question h1{font-size:clamp(31px,5.5vw,38px)}
+  .question-main form{margin-top:26px}
+  .answer-row{min-height:64px}
+  .answer-row input{font-size:18px}
+  .answer-button{min-width:108px;min-height:62px;padding:0 16px}
+  .ocean-head{top:24px}
+  .depth-readout{top:58px;font-size:43px}
+  .depth-label{top:111px}
+  .depth-track{top:19%;bottom:19%;left:54%;right:7%}
+  .track-line,.tick{left:60%}
+  .tick span{left:18px;top:-7px;font-size:12px}
+  .sub-position{left:calc(60% - 75px);width:75px}
+  .ocean-bottom{bottom:20px;max-width:150px}
+}
+@media(max-height:670px) and (min-width:701px){
+  .paper-content{padding-top:20px}
+  .question-main h1{font-size:clamp(38px,4.4vw,62px)}
+  .long-question h1{font-size:clamp(32px,3.6vw,48px)}
+  .question-main form{margin-top:24px}
+  .question-meta{min-height:80px}
+  .timer{width:80px;height:80px}
+  .untimed-label{width:auto;height:auto}
+}
+@media(prefers-reduced-motion:reduce){.reward-vignette{display:none}.sub-position{transition:none}}
