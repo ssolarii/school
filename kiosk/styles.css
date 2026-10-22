@@ -88,6 +88,18 @@ h1, p { margin-top: 0; }
 .selected-pathway p { margin: 20px 0 0; font-size: clamp(26px, 3.2vw, 42px); line-height: 1.2; }
 .selected-pathway__back { position: absolute; inset: -24px; border: 0; border-radius: 16px; color: inherit; background: transparent; cursor: pointer; touch-action: manipulation; }
 
+@media (prefers-reduced-motion: no-preference) {
+  .control-screen .selected-pathway__icon,
+  .control-screen .selected-pathway__copy {
+    animation: pathway-arrive 280ms var(--ease);
+  }
+}
+
+@keyframes pathway-arrive {
+  from { opacity: .45; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .display-screen { min-height: 100svh; overflow: hidden; background: #160b2d; }
 .display-shell { min-height: 100svh; }
 .attract-stage, .presentation-stage { position: relative; min-height: 100svh; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; padding: clamp(28px, 5vw, 80px); background: #160b2d; isolation: isolate; }
