@@ -14,8 +14,8 @@ const assert = require('node:assert/strict');
   for (const id of ['science-tech', 'computer-science', 'engineering-manufacturing']) {
    await page.locator(`[data-pathway="${id}"]`).click();
    await page.waitForFunction(() => { const v = document.querySelector('video'); return v && !v.paused && v.currentTime > .2; }, { timeout: 30000 });
-   assert.equal(await page.locator('video').evaluate(v => v.muted), id === 'computer-science');
-   assert.equal(await page.locator('video').evaluate(v => v.loop), id === 'computer-science');
+   assert.equal(await page.locator('video').evaluate(v => v.muted), false);
+   assert.equal(await page.locator('video').evaluate(v => v.loop), false);
    assert.equal(page.context().pages().length, 1);
    if (id === 'engineering-manufacturing') {
     await page.locator('video').evaluate(v => v.dispatchEvent(new Event('ended')));

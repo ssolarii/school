@@ -23,11 +23,11 @@ export const KIOSK_CONFIG = {
     {
       id: 'computer-science',
       title: 'Computer Science',
-      detail: 'Sample programming footage.',
-      video: './media/computer-science-sample.mp4',
-      image: './media/computer-science-sample.jpg',
+      detail: 'Computer science at Itz\'at STEAM Academy.',
+      video: './media/cs_final.mp4',
+      image: './media/cs_final.jpg',
       accent: 'amber',
-      sample: true,
+      sample: false,
     },
     {
       id: 'engineering-manufacturing',

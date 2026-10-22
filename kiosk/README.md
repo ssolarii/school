@@ -4,7 +4,7 @@ A browser-only, two-screen kiosk. The touchscreen uses `index.html`; the TV uses
 
 ## First-run checklist
 
-1. The pathways are **Science + Tech**, **Computer Science**, and **Engineering & Manufacturing**. Science + Tech plays the finished health science film, Engineering plays its finished film, and Computer Science keeps its sample while its final film is being processed. The files are connected in [`config.js`](./config.js).
+1. The pathways are **Science + Tech**, **Computer Science**, and **Engineering & Manufacturing**. All three play their finished school films. The files are connected in [`config.js`](./config.js).
 2. When school videos are ready, add them in `media/`, update the relative `video` and poster `image` paths, and set that pathway's `sample` to `false`. [Media credits and sources](./MEDIA-CREDITS.md) document the current samples.
 3. Finished films (`sample: false`) play once with sound and return both screens home when they end. Samples loop muted for `presentationSeconds` (90 seconds). This setting is also the maximum session length; increase it if a future finished film is longer.
 4. Serve this folder over a local or HTTPS static web server. Do not rely on double-clicking the HTML files: browsers can restrict JavaScript module loading from `file:` URLs.
@@ -47,7 +47,7 @@ Video banners have been removed, including the old banner settings; saved banner
 ## Browser behaviour
 
 - If the display window is blocked, the touchscreen says so and lets the operator retry. Allow popups for the kiosk address.
-- The two finished school films play with audio. Computer Science still uses a muted 9-second stock sample repeated for the 90-second selection; that sample does not depict the school.
+- All three finished school films play once with audio and return home at the end.
 - Audible autoplay depends on browser permission. If needed, the TV offers **Tap to play with sound**. The idle film and stock sample stay muted. Leaving a film stops its audio immediately.
 - If Chrome pauses the video when changing windows or displays, the TV attempts to resume it. A failed media request shows **Video could not load. Tap to retry**, rather than mislabelling it an autoplay permission problem.
 - If the TV popup is closed, use the **Open window 2** button that reappears on the touchscreen. Reloading either window reconnects automatically.

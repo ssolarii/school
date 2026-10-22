@@ -49,9 +49,9 @@ async function allowSoundIfNeeded(tv) {
         const after = await tv.locator('video').evaluate(v => v.currentTime);
         assert.ok(after > before, `${mode}: video time must advance`);
         const playback = await tv.locator('video').evaluate(v => ({ muted: v.muted, loop: v.loop, src: v.currentSrc, duration: v.duration }));
-        assert.equal(playback.muted, id === 'computer-science');
-        assert.equal(playback.loop, id === 'computer-science');
-        if (id !== 'computer-science') assert.ok(playback.duration > 50 && playback.src.includes('_final.mp4'));
+        assert.equal(playback.muted, false);
+        assert.equal(playback.loop, false);
+        assert.ok(playback.duration > 50 && playback.src.includes('_final.mp4'));
         assert.equal(await tv.locator('.presentation-top, .presentation-caption, .presentation-shade').count(), 0);
         if (process.env.KIOSK_TEST_PAUSE === '1') {
           await tv.locator('video').evaluate(v => v.pause());
