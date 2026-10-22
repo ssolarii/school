@@ -1,7 +1,8 @@
-"""Serve Deep Dive and adapt the existing local DeepSeek bridge to /api/judge.
+"""Serve Deep Dive with the local DeepSeek bridge and a free-only OpenRouter fallback.
 
 Standard library only. Start: python serve.py --open
 Override the bridge with DEEP_DIVE_DEEPSEEK_URL (full chat-completions URL).
+Set OPENROUTER_API_KEY on the server to enable the fallback. Never put it in browser files.
 """
 from __future__ import annotations
 
@@ -22,6 +23,10 @@ import webbrowser
 ROOT = Path(__file__).resolve().parent
 BRIDGE_URL = os.getenv("DEEP_DIVE_DEEPSEEK_URL", "http://127.0.0.1:8000/v1/chat/completions")
 MODEL = os.getenv("DEEP_DIVE_MODEL", "deepseek-chat")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+FAST_FREE_MODEL = "nvidia/nemotron-3.5-lightning:free"
+BACKUP_FREE_MODEL = "cohere/north-mini-code:free"
+FALLBACK_MODEL = os.getenv("DEEP_DIVE_OPENROUTER_MODEL", FAST_FREE_MODEL)
 BANDS = (100, 300, 600, 1000)
 LOG = logging.getLogger("deep-dive")
 SYSTEM_PROMPT = """You judge short answers in Deep Dive, a school showcase party game.
@@ -91,23 +96,127 @@ def validate_judgment(content):
             "source": "deepseek"}
 
 
+def read_response(response, deadline, limit=100_000):
+    """Bound the whole response, including providers that send periodic keepalives."""
+    body = bytearray()
+    reader = getattr(response, "read1", response.read)
+    while len(body) <= limit:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("Judge deadline exceeded")
+        # urllib exposes no public body deadline. Its HTTPResponse owns this socket.
+        sock = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+        if sock is not None:
+            sock.settimeout(remaining)
+        chunk = reader(limit + 1 - len(body))
+        if not chunk:
+            return bytes(body)
+        body.extend(chunk)
+    raise JudgeUnavailable("Judge response is too large")
+
+
 class DeepSeekJudge:
-    def __init__(self, bridge_url=BRIDGE_URL, model=MODEL):
+    def __init__(self, bridge_url=BRIDGE_URL, model=MODEL, *, fallback_api_key=None, fallback_model=FALLBACK_MODEL):
         self.bridge_url = bridge_url
         self.model = model
+        self.fallback_key = (fallback_api_key if fallback_api_key is not None else os.getenv("OPENROUTER_API_KEY", "")).strip()
+        if fallback_model != "openrouter/free" and not re.fullmatch(r"[A-Za-z0-9_./-]+:free", fallback_model):
+            raise ValueError("OpenRouter fallback must use openrouter/free or a model ending in :free")
+        self.fallback_model = fallback_model
+        self.fallback_models = [fallback_model] + ([BACKUP_FREE_MODEL] if fallback_model == FAST_FREE_MODEL else [])
+        self.active_fallback_model = None
+        self.primary_status = "unverified"
+        self.fallback_status = "unverified" if self.fallback_key else "not_configured"
         self.cache = {}
         self.lock = threading.Lock()
         self.slots = threading.BoundedSemaphore(2)
 
-    def judge(self, question, answer):
+    def health(self, bridge_reachable):
+        # /healthz proves the bridge is listening, not that its saved login works.
+        return {"service": "deep-dive", "ready": (bridge_reachable and self.primary_status == "ready") or self.fallback_status == "ready",
+                "bridgeReachable": bridge_reachable, "primaryStatus": self.primary_status, "model": self.model,
+                "fallback": {"configured": bool(self.fallback_key), "status": self.fallback_status,
+                             "model": self.fallback_model, "backupModels": self.fallback_models[1:],
+                             "activeModel": self.active_fallback_model, "freeOnly": True}}
+
+    def request_review(self, url, payload, *, source, timeout, authorization=None):
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        if authorization:
+            headers["Authorization"] = f"Bearer {authorization}"
+        request = Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+        try:
+            deadline = time.monotonic() + timeout
+            with urlopen(request, timeout=timeout) as response:
+                body = read_response(response, deadline)
+            if len(body) > 100_000:
+                raise JudgeUnavailable("Judge response is too large")
+            choice = json.loads(body)["choices"][0]
+            if choice.get("finish_reason") == "length":
+                raise JudgeUnavailable("Judge output was incomplete")
+            result = validate_judgment(choice["message"]["content"])
+            result["source"] = source
+            return result
+        except HTTPError as exc:
+            with exc:
+                try:
+                    error_body = read_response(exc, deadline, limit=4096).decode("utf-8", errors="replace")
+                except (TimeoutError, OSError, JudgeUnavailable):
+                    error_body = ""
+            if source == "deepseek" and (exc.code in (401, 403) or "INVALID_TOKEN" in error_body):
+                self.primary_status = "login_required"
+                raise JudgeUnavailable("DeepSeek login expired. Sign in again or configure the free OpenRouter fallback.") from exc
+            raise JudgeUnavailable(f"{source} returned HTTP {exc.code}") from exc
+        except (URLError, TimeoutError, OSError, ValueError, KeyError, IndexError, TypeError) as exc:
+            raise JudgeUnavailable(f"{source} unavailable or returned an invalid review") from exc
+
+    def review_with_fallback(self, payload):
+        try:
+            result = self.request_review(self.bridge_url, payload, source="deepseek", timeout=6)
+            self.primary_status = "ready"
+            return result
+        except JudgeUnavailable as primary_error:
+            if self.primary_status != "login_required":
+                self.primary_status = "unavailable"
+            if not self.fallback_key:
+                raise
+            LOG.warning("Primary review unavailable; trying free OpenRouter fallback: %s", primary_error)
+
+        last_error = None
+        for model in self.fallback_models:
+            # These small free models use prompt-directed JSON plus local validation.
+            # They do not advertise response_format, so do not require that parameter.
+            fallback_payload = {"model": model, "stream": False,
+                                "messages": payload["messages"], "temperature": 0, "max_tokens": 512,
+                                "reasoning": {"enabled": False},
+                                "provider": {"require_parameters": True,
+                                             "max_price": {"prompt": 0, "completion": 0, "request": 0, "image": 0}},
+                                "plugins": [{"id": "web", "enabled": False}]}
+            if model not in (FAST_FREE_MODEL, BACKUP_FREE_MODEL):
+                fallback_payload["response_format"] = {"type": "json_object"}
+            if model == "recursive/flint-v1.0:free":
+                fallback_payload.pop("reasoning")
+                fallback_payload["max_tokens"] = 4096
+            try:
+                result = self.request_review(OPENROUTER_URL, fallback_payload, source="openrouter", timeout=8,
+                                             authorization=self.fallback_key)
+                self.fallback_status = "ready"
+                self.active_fallback_model = model
+                return result
+            except JudgeUnavailable as exc:
+                last_error = exc
+                LOG.warning("Free model unavailable: %s", model)
+        self.fallback_status = "unavailable"
+        raise last_error
+
+    def judge(self, question, answer, *, probe=False):
         key = (question["id"], normalize(answer))
-        for group in question["answers"]:
+        for group in ([] if probe else question["answers"]):
             if any(normalize(alias) == key[1] for alias in group[:-1]):
                 return {"valid": True, "depth": group[-1], "confidence": "high",
                         "explanation": question["fact"], "needsReview": False, "source": "chart"}
         with self.lock:
             cached = self.cache.get(key)
-            if cached and time.monotonic() - cached[0] < 1800:
+            if not probe and cached and time.monotonic() - cached[0] < 1800:
                 return dict(cached[1], cached=True)
         if not self.slots.acquire(blocking=False):
             raise JudgeUnavailable("Judge is busy")
@@ -119,17 +228,7 @@ class DeepSeekJudge:
                        "temperature": 0, "max_tokens": 180,
                        "messages": [{"role": "system", "content": SYSTEM_PROMPT},
                                     {"role": "user", "content": json.dumps(trusted, ensure_ascii=False)}]}
-            request = Request(self.bridge_url, data=json.dumps(payload).encode("utf-8"),
-                              headers={"Content-Type": "application/json", "Accept": "application/json"})
-            try:
-                with urlopen(request, timeout=30) as response:
-                    body = response.read(100_001)
-                if len(body) > 100_000:
-                    raise JudgeUnavailable("Judge response is too large")
-                content = json.loads(body)["choices"][0]["message"]["content"]
-            except (HTTPError, URLError, TimeoutError, OSError, ValueError, KeyError, IndexError, TypeError) as exc:
-                raise JudgeUnavailable("DeepSeek bridge unavailable") from exc
-            result = validate_judgment(content)
+            result = self.review_with_fallback(payload)
             if not result["needsReview"]:
                 with self.lock:
                     if len(self.cache) >= 512:
@@ -189,7 +288,7 @@ class Handler(SimpleHTTPRequestHandler):
                     ready = response.status == 200
             except (URLError, TimeoutError, OSError):
                 ready = False
-            self.send_json(200, {"service": "deep-dive", "ready": ready, "model": JUDGE.model})
+            self.send_json(200, JUDGE.health(ready))
         elif self.path.startswith("/api/"):
             self.send_json(404, {"error": "Unknown endpoint"})
         else:
@@ -218,12 +317,13 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(400, {"error": "Unknown question or invalid answer"})
             return
         try:
-            result = JUDGE.judge(question, answer.strip())
+            result = JUDGE.judge(question, answer.strip(), probe=data.get("probe") is True)
             self.send_json(200, result)
         except JudgeUnavailable as exc:
             LOG.warning("Automatic review unavailable: %s", exc)
-            self.send_json(503, {"needsReview": True, "error": "Automatic review unavailable. Ask a guide."})
-        except (BrokenPipeError, ConnectionResetError):
+            self.send_json(503, {"needsReview": True, "error": "Automatic review unavailable. Ask a guide.",
+                                 "primaryStatus": JUDGE.primary_status, "fallbackStatus": JUDGE.fallback_status})
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             pass
 
 
@@ -248,6 +348,8 @@ def main():
             pass
         raise
     print(f"Deep Dive: {url}\nDeepSeek bridge: {BRIDGE_URL}\nPress Ctrl+C to stop.", flush=True)
+    print(f"OpenRouter fallback: {JUDGE.fallback_model} (free only)" if JUDGE.fallback_key
+          else "OpenRouter fallback: not configured. Set OPENROUTER_API_KEY to enable it.", flush=True)
     if args.open:
         webbrowser.open(url)
     try:

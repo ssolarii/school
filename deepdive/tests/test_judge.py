@@ -62,6 +62,101 @@ class JudgmentTests(unittest.TestCase):
             self.assertTrue(judge.judge(server.CATALOG['language'], 'erlang')['cached'])
             self.assertEqual(request.call_count, 1)
 
+    def test_expired_primary_token_uses_only_free_openrouter_fallback(self):
+        judge = server.DeepSeekJudge(fallback_api_key='test-key')
+        expired = HTTPError(judge.bridge_url, 500, 'Error', {}, io.BytesIO(b'{"error":{"message":"INVALID_TOKEN"}}'))
+        upstream = json.dumps({'choices': [{'message': {'content': self.result()}}]}).encode()
+        with patch.object(server, 'urlopen', side_effect=[expired, io.BytesIO(upstream)]) as requests:
+            result = judge.judge(server.CATALOG['language'], 'Erlang')
+        fallback = requests.call_args_list[1].args[0]
+        payload = json.loads(fallback.data)
+        self.assertEqual(fallback.full_url, 'https://openrouter.ai/api/v1/chat/completions')
+        self.assertEqual(fallback.get_header('Authorization'), 'Bearer test-key')
+        self.assertIsNone(requests.call_args_list[0].args[0].get_header('Authorization'))
+        self.assertEqual(payload['model'], 'nvidia/nemotron-3.5-lightning:free')
+        self.assertEqual(payload['provider']['max_price'], {'prompt': 0, 'completion': 0, 'request': 0, 'image': 0})
+        self.assertNotIn('response_format', payload)
+        self.assertEqual(payload['reasoning'], {'enabled': False})
+        self.assertNotIn('thinking', payload)
+        self.assertNotIn('search', payload)
+        self.assertEqual(payload['plugins'], [{'id': 'web', 'enabled': False}])
+        self.assertEqual(payload['max_tokens'], 512)
+        self.assertEqual(result['source'], 'openrouter')
+        self.assertEqual(judge.primary_status, 'login_required')
+
+    def test_paid_fallback_models_are_rejected(self):
+        with self.assertRaises(ValueError):
+            server.DeepSeekJudge(fallback_api_key='test-key', fallback_model='paid/model')
+        judge = server.DeepSeekJudge(fallback_api_key='test-key', fallback_model='recursive/flint-v1.0:free')
+        self.assertEqual(judge.fallback_model, 'recursive/flint-v1.0:free')
+
+    def test_failure_without_a_fallback_key_is_actionable(self):
+        judge = server.DeepSeekJudge(fallback_api_key='')
+        expired = HTTPError(judge.bridge_url, 500, 'Error', {}, io.BytesIO(b'{"error":{"message":"INVALID_TOKEN"}}'))
+        with patch.object(server, 'urlopen', side_effect=expired) as requests:
+            with self.assertRaisesRegex(server.JudgeUnavailable, 'login expired'):
+                judge.judge(server.CATALOG['language'], 'Erlang')
+        self.assertEqual(requests.call_count, 1)
+        self.assertFalse(judge.health(True)['ready'])
+        self.assertEqual(judge.health(True)['primaryStatus'], 'login_required')
+
+    def test_uncertainty_does_not_retry_another_model_for_a_different_verdict(self):
+        judge = server.DeepSeekJudge(fallback_api_key='test-key')
+        upstream = json.dumps({'choices': [{'message': {'content': self.result(confidence='low')}}]}).encode()
+        with patch.object(server, 'urlopen', return_value=io.BytesIO(upstream)) as requests:
+            self.assertTrue(judge.judge(server.CATALOG['language'], 'Erlang')['needsReview'])
+        self.assertEqual(requests.call_count, 1)
+
+    def test_failed_or_truncated_fallback_never_awards_points(self):
+        for content, reason in [('not JSON', 'stop'), (self.result(), 'length')]:
+            judge = server.DeepSeekJudge(fallback_api_key='test-key')
+            upstream = json.dumps({'choices': [{'message': {'content': content}, 'finish_reason': reason}]}).encode()
+            with patch.object(server, 'urlopen', side_effect=[TimeoutError(), io.BytesIO(upstream), io.BytesIO(upstream)]):
+                with self.assertRaises(server.JudgeUnavailable):
+                    judge.judge(server.CATALOG['language'], 'Erlang')
+
+    def test_health_does_not_confuse_liveness_with_a_tested_model(self):
+        judge = server.DeepSeekJudge(fallback_api_key='')
+        health = judge.health(True)
+        self.assertTrue(health['bridgeReachable'])
+        self.assertFalse(health['ready'])
+        self.assertEqual(health['primaryStatus'], 'unverified')
+
+    def test_connection_probe_bypasses_both_chart_and_cache(self):
+        judge = server.DeepSeekJudge(fallback_api_key='')
+        upstream = json.dumps({'choices': [{'message': {'content': self.result()}}]}).encode()
+        with patch.object(server, 'urlopen', side_effect=lambda *args, **kwargs: io.BytesIO(upstream)) as requests:
+            judge.judge(server.CATALOG['language'], 'Python', probe=True)
+            judge.judge(server.CATALOG['language'], 'Python', probe=True)
+        self.assertEqual(requests.call_count, 2)
+
+    def test_rate_limited_primary_free_pool_uses_an_independent_free_backup(self):
+        judge = server.DeepSeekJudge(fallback_api_key='test-key')
+        limited = HTTPError(server.OPENROUTER_URL, 429, 'Rate limited', {}, io.BytesIO(b'{}'))
+        upstream = json.dumps({'choices': [{'message': {'content': self.result()}}]}).encode()
+        with patch.object(server, 'urlopen', side_effect=[TimeoutError(), limited, io.BytesIO(upstream)]) as requests:
+            result = judge.judge(server.CATALOG['language'], 'Erlang')
+        self.assertEqual(result['source'], 'openrouter')
+        self.assertEqual(json.loads(requests.call_args_list[2].args[0].data)['model'], server.BACKUP_FREE_MODEL)
+        self.assertLessEqual(sum(call.kwargs['timeout'] for call in requests.call_args_list), 22)
+
+    def test_slow_keepalives_cannot_extend_the_total_response_deadline(self):
+        class Trickle:
+            def read(self, size): return b' '
+            read1 = read
+        with patch.object(server.time, 'monotonic', side_effect=[0, 0.5, 1.1]):
+            with self.assertRaises(TimeoutError):
+                server.read_response(Trickle(), deadline=1)
+
+    def test_interrupted_http_error_body_does_not_skip_free_fallback(self):
+        class Interrupted(io.BytesIO):
+            def read1(self, size): raise TimeoutError('Error body stalled')
+        judge = server.DeepSeekJudge(fallback_api_key='test-key')
+        failure = HTTPError(judge.bridge_url, 500, 'Failed', {}, Interrupted())
+        upstream = json.dumps({'choices': [{'message': {'content': self.result()}}]}).encode()
+        with patch.object(server, 'urlopen', side_effect=[failure, io.BytesIO(upstream)]):
+            self.assertEqual(judge.judge(server.CATALOG['language'], 'Erlang')['source'], 'openrouter')
+
 
 class EndpointTests(unittest.TestCase):
     @classmethod
