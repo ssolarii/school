@@ -1,0 +1,119 @@
+{
+  "student": "Alejandro Moralez",
+  "class": "3CS",
+  "year": 2022,
+  "districts": [
+    {
+      "name": "Belize",
+      "population": 113630,
+      "area": 4204,
+      "point": [
+        -88.3,
+        17.6
+      ],
+      "insight": "Belize has the largest population and the highest district density."
+    },
+    {
+      "name": "Cayo",
+      "population": 99105,
+      "area": 5338,
+      "point": [
+        -88.9,
+        17.1
+      ],
+      "insight": "Cayo has the second-largest population, but its larger land area gives it a lower density than Corozal and Stann Creek."
+    },
+    {
+      "name": "Corozal",
+      "population": 45310,
+      "area": 1860,
+      "point": [
+        -88.4,
+        18.25
+      ],
+      "insight": "Corozal has fewer people than Cayo, yet more people per square kilometre because its area is much smaller."
+    },
+    {
+      "name": "Orange Walk",
+      "population": 54152,
+      "area": 4737,
+      "point": [
+        -88.8,
+        17.95
+      ],
+      "insight": "Orange Walk has more people than Stann Creek, but a lower density because it covers more than twice as much land."
+    },
+    {
+      "name": "Stann Creek",
+      "population": 48162,
+      "area": 2176,
+      "point": [
+        -88.4,
+        16.85
+      ],
+      "insight": "Stann Creek has a smaller population than Orange Walk, but a higher density."
+    },
+    {
+      "name": "Toledo",
+      "population": 37124,
+      "area": 4649,
+      "point": [
+        -88.9,
+        16.25
+      ],
+      "insight": "Toledo has the lowest average density. A district average does not mean every village has the same settlement pattern."
+    }
+  ],
+  "countries": [
+    {
+      "name": "Belize",
+      "population": 397483,
+      "area": 22964,
+      "year": 2022
+    },
+    {
+      "name": "Jamaica",
+      "population": 2774538,
+      "area": 10830,
+      "year": 2022
+    },
+    {
+      "name": "Barbados",
+      "population": 269090,
+      "area": 430,
+      "year": 2021
+    }
+  ],
+  "sources": [
+    {
+      "title": "SIB 2022 Census Key Findings, Table 4.1 (printed page 72 / PDF page 74)",
+      "url": "https://sib.org.bz/wp-content/uploads/CensusKeyFindingsReport_2022.pdf",
+      "use": "All district populations and land areas; national population and land area. Report published February 2026. Census year 2022."
+    },
+    {
+      "title": "STATIN 2022 census population change by parish",
+      "url": "https://statinja.gov.jm/PopCensus/Census2022/Population%20Change%20by%20Parish.aspx",
+      "use": "Jamaica population, 2022 census: 2,774,538."
+    },
+    {
+      "title": "Jamaica Ministry of Labour, Situation Analysis, July 2025",
+      "url": "https://www.jisha.or.jp/Portals/0/resources/international/training/pdf/jamaica2025.pdf",
+      "use": "Government-authored source for Jamaica land area, 10,830 km², excluding inland water. Area reference 2025; population reference 2022."
+    },
+    {
+      "title": "Barbados Statistical Service 2021 Census, Table A, page 21",
+      "url": "https://stats.gov.bb/wp-content/uploads/2024/02/2021-Population-and-Housing-Census.pdf",
+      "use": "Estimated resident population as at 1 August 2021: 269,090, including adjustment for undercount. Not the raw enumerated count."
+    },
+    {
+      "title": "Government of Barbados Digest of Statistics 2019–2021",
+      "url": "https://labour.gov.bb/wp-content/uploads/2023/05/Digital-Digest-of-Statistics-2021-Final-updated.pdf",
+      "use": "Barbados area: approximately 430 km²; geographic introduction."
+    },
+    {
+      "title": "geoBoundaries BLZ ADM1",
+      "url": "https://www.geoboundaries.org/api/current/gbOpen/BLZ/ADM1/",
+      "use": "Simplified district geometry, representing 2006 boundaries; geoBoundaries/Wikimedia Commons, CC BY 2.5. Geometry is illustrative and is not used to calculate official area."
+    }
+  ]
+}
